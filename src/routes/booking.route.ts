@@ -1,0 +1,17 @@
+import express from "express"
+import BookingController from "../controllers/booking.controller"
+import authMiddleware from "../middlewares/auth.middleware"
+import { Roles } from "../utils/constant"
+
+const BookingRoute = express.Router()
+
+BookingRoute.post("/createBooking",
+  authMiddleware([Roles.ROLE_USER]),
+  BookingController.createBooking
+)
+BookingRoute.post("/getListMyBooking",
+  authMiddleware([Roles.ROLE_USER, Roles.ROLE_BARBER]),
+  BookingController.getListMyBooking
+)
+
+export default BookingRoute
