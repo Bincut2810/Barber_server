@@ -30,13 +30,12 @@ const fncChangeProfile = async (req: Request) => {
         { _id: UserID },
         {
           ...req.body as ChangeProfileDTO,
-          RegisterStatus: 2,
           IsFirstLogin: false
         },
         { new: true }
       )
     if (!user) return response({}, true, ErrorMessage.HAVE_AN_ERROR, 200)
-    return response(user, false, "Yêu cầu của bạn đã được gửi. Hệ thống sẽ phản hồi yêu cầu của bạn trong 48h!", 200)
+    return response(user, false, "Bạn đã cập nhật thông tin thành công. Hãy bổ sung về dịch vụ và thời gian làm việc để quản trị viên duyệt!", 200)
   } catch (error: any) {
     return response({}, true, error.toString(), 500)
   }
@@ -105,6 +104,17 @@ const fncGetListUser = async (req: Request) => {
   }
 }
 
+const fncRequestConfirmRegister = async (req: Request) => {
+  try {
+    const UserID = req.user.ID
+    const user = await User.findOneAndUpdate({ _id: UserID }, { RegisterStatus: 2 }, { new: true })
+    if (!user) return response({}, true, ErrorMessage.HAVE_AN_ERROR, 200)
+    return response(user, false, "Yêu cầu của bạn đã được gửi. Hệ thống sẽ phản hồi yêu cầu của bạn trong 48h!", 200)
+  } catch (error: any) {
+    return response({}, true, error.toString(), 500)
+  }
+}
+
 const fncResponseRequestRegister = async (req: Request) => {
   try {
     const { UserID, RegisterStatus } = req.body as ResponseRequestRegisterDTO
@@ -160,7 +170,8 @@ const fncGetListBarber = async (req: Request) => {
     const barbers = await User.aggregate([
       {
         $match: {
-          RoleID: Roles.ROLE_BARBER
+          RoleID: Roles.ROLE_BARBER,
+          RegisterStatus: 3
         }
       },
       // {
@@ -197,7 +208,7 @@ const fncGetListBarber = async (req: Request) => {
   }
 }
 
-const fncGetDetailBarber = async (req: Request) => {
+export const fncGetDetailBarber = async (req: Request) => {
   try {
     const { BarberID } = req.params
     if (!mongoose.Types.ObjectId.isValid(`${BarberID}`)) {
@@ -238,6 +249,7 @@ const UserService = {
   fncGetDetailProfile,
   fncChangeProfile,
   fncGetListUser,
+  fncRequestConfirmRegister,
   fncResponseRequestRegister,
   fncUpdateSchedule,
   fncUpdateService,

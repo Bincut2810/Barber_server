@@ -17,6 +17,10 @@ UserRoute.post("/getListUser",
   authMiddleware([Roles.ROLE_ADMIN]),
   UserController.getListUser
 )
+UserRoute.get("/requestConfirmRegister",
+  authMiddleware([Roles.ROLE_BARBER]),
+  UserController.requestConfirmRegister
+)
 UserRoute.post("/responseRequestRegister",
   authMiddleware([Roles.ROLE_ADMIN]),
   UserController.responseRequestRegister

@@ -28,6 +28,15 @@ const getListUser = async (req: Request, res: Response) => {
   }
 }
 
+const requestConfirmRegister = async (req: Request, res: Response) => {
+  try {
+    const response = await UserService.fncRequestConfirmRegister(req)
+    res.status(response.statusCode).json(response)
+  } catch (error: any) {
+    res.status(500).json(error.toString())
+  }
+}
+
 const responseRequestRegister = async (req: Request, res: Response) => {
   try {
     const response = await UserService.fncResponseRequestRegister(req)
@@ -77,6 +86,7 @@ const UserController = {
   getDetailProfile,
   changeProfile,
   getListUser,
+  requestConfirmRegister,
   responseRequestRegister,
   updateSchedule,
   updateService,
