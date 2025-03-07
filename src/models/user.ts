@@ -60,6 +60,10 @@ const UserSchema = new Schema({
         ExpensePrice: {
           type: Number,
           required: true
+        },
+        ServiceTime: {
+          type: Number,
+          required: true
         }
       }
     ],

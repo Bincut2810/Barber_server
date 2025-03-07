@@ -7,16 +7,45 @@ import {
   ChangeProfileDTO,
   ResponseRequestRegisterDTO,
   UpdateSchedulesDTO,
-  UpdateServiceDTO
+  UpdateServiceDTO,
+  InactiveOrActiveAccountDTO,
+  GetListBarberDTO
 } from "../dtos/user.dto"
 import mongoose from "mongoose"
+import Booking from "../models/booking"
+import Account from "../models/account"
 
 const fncGetDetailProfile = async (req: Request) => {
   try {
     const UserID = req.user.ID
-    const user = await User.findOne({ _id: UserID })
-    if (!user) return response({}, true, ErrorMessage.HAVE_AN_ERROR, 200)
-    return response(user, false, SuccessMessage.GET_DATA_SUCCESS, 200)
+    const user = await User.aggregate([
+      {
+        $match: {
+          _id: new mongoose.Types.ObjectId(`${UserID}`)
+        }
+      },
+      {
+        $lookup: {
+          from: "accounts",
+          localField: "_id",
+          foreignField: "UserID",
+          as: "Account"
+        }
+      },
+      { $unwind: "$Account" },
+      {
+        $addFields: {
+          Email: "$Account.Email"
+        }
+      },
+      {
+        $project: {
+          Account: 0
+        }
+      }
+    ])
+    if (!user[0]) return response({}, true, ErrorMessage.HAVE_AN_ERROR, 200)
+    return response(user[0], false, SuccessMessage.GET_DATA_SUCCESS, 200)
   } catch (error: any) {
     return response({}, true, error.toString(), 500)
   }
@@ -24,10 +53,10 @@ const fncGetDetailProfile = async (req: Request) => {
 
 const fncChangeProfile = async (req: Request) => {
   try {
-    const UserID = req.user.ID
+    const { ID, RoleID } = req.user
     const user = await User
       .findOneAndUpdate(
-        { _id: UserID },
+        { _id: ID },
         {
           ...req.body as ChangeProfileDTO,
           IsFirstLogin: false
@@ -35,7 +64,14 @@ const fncChangeProfile = async (req: Request) => {
         { new: true }
       )
     if (!user) return response({}, true, ErrorMessage.HAVE_AN_ERROR, 200)
-    return response(user, false, "Bạn đã cập nhật thông tin thành công. Hãy bổ sung về dịch vụ và thời gian làm việc để quản trị viên duyệt!", 200)
+    return response(
+      user,
+      false,
+      RoleID === Roles.ROLE_BARBER
+        ? "Bạn đã cập nhật thông tin thành công. Hãy bổ sung về dịch vụ và thời gian làm việc để quản trị viên duyệt!"
+        : "Bạn đã cập nhật thông tin thành công",
+      200
+    )
   } catch (error: any) {
     return response({}, true, error.toString(), 500)
   }
@@ -167,26 +203,37 @@ const fncUpdateService = async (req: Request) => {
 
 const fncGetListBarber = async (req: Request) => {
   try {
+    const { TextSearch, PageSize, CurrentPage, SortByStar } = req.body as GetListBarberDTO
     const barbers = await User.aggregate([
       {
         $match: {
           RoleID: Roles.ROLE_BARBER,
-          RegisterStatus: 3
+          RegisterStatus: 3,
+          $or: [
+            { FullName: { $regex: TextSearch, $options: "i" } },
+            { Address: { $regex: TextSearch, $options: "i" } },
+          ]
         }
       },
-      // {
-      //   $unwind: {
-      //     path: "$Stars",
-      //     preserveNullAndEmptyArrays: true
-      //   }
-      // },
-      // {
-      //   $group: {
-      //     _id: "$_id",
-      //     TotalVotes: { $sum: "$Stars" },
-      //     Votes: { $push: "$Votes" },
-      //   }
-      // },
+      {
+        $lookup: {
+          from: "accounts",
+          localField: "_id",
+          foreignField: "UserID",
+          as: "Account"
+        }
+      },
+      { $unwind: "$Account" },
+      {
+        $addFields: {
+          IsActive: "$Account.IsActive"
+        }
+      },
+      {
+        $match: {
+          IsActive: true
+        }
+      },
       {
         $project: {
           _id: 1,
@@ -199,8 +246,10 @@ const fncGetListBarber = async (req: Request) => {
         }
       },
       {
-        $sort: { TotalStars: -1 }
-      }
+        $sort: { TotalStars: SortByStar }
+      },
+      { $skip: (CurrentPage - 1) * PageSize },
+      { $limit: PageSize },
     ])
     return response(barbers, false, SuccessMessage.GET_DATA_SUCCESS, 200)
   } catch (error: any) {
@@ -211,13 +260,43 @@ const fncGetListBarber = async (req: Request) => {
 export const fncGetDetailBarber = async (req: Request) => {
   try {
     const { BarberID } = req.params
+    let bookingSchedules = [] as any[]
     if (!mongoose.Types.ObjectId.isValid(`${BarberID}`)) {
       return response({}, true, "ID barber không tồn tại", 200)
+    }
+    const bookings = await Booking
+      .find({
+        Barber: BarberID,
+        BookingStatus: 4
+      })
+      .select("Services DateAt")
+    if (!!bookings.length) {
+      bookings.forEach((i: any) => {
+        const totalServiceTime = i.Services.reduce((sum: any, service: any) => sum + service.ServiceTime, 0)
+        bookingSchedules.push({
+          StartTime: i.DateAt,
+          EndTime: new Date(i.DateAt.getTime() + totalServiceTime * 60000)
+        })
+      })
     }
     const barber = await User.aggregate([
       {
         $match: {
           _id: new mongoose.Types.ObjectId(`${BarberID}`)
+        }
+      },
+      {
+        $lookup: {
+          from: "accounts",
+          localField: "_id",
+          foreignField: "UserID",
+          as: "Account"
+        }
+      },
+      { $unwind: '$Account' },
+      {
+        $addFields: {
+          Email: "$Account.Email"
         }
       },
       {
@@ -235,11 +314,66 @@ export const fncGetDetailBarber = async (req: Request) => {
           AvatarPath: 1,
           Stars: 1,
           TotalStars: { $sum: "$Stars" },
+          Email: 1
         }
       },
     ])
     if (!barber[0]) return response({}, true, ErrorMessage.HAVE_AN_ERROR, 200)
-    return response(barber[0], false, SuccessMessage.GET_DATA_SUCCESS, 200)
+    return response(
+      {
+        ...barber[0],
+        BookingSchedules: bookingSchedules
+      },
+      false,
+      SuccessMessage.GET_DATA_SUCCESS,
+      200
+    )
+  } catch (error: any) {
+    return response({}, true, error.toString(), 500)
+  }
+}
+
+const fncGetListTopBarber = async () => {
+  try {
+    const barbers = await User.aggregate([
+      {
+        $match: {
+          RoleID: Roles.ROLE_BARBER,
+          RegisterStatus: 3
+        }
+      },
+      {
+        $project: {
+          _id: 1,
+          FullName: 1,
+          AvatarPath: 1,
+          Stars: 1,
+          TotalStars: { $sum: "$Stars" },
+        }
+      },
+      {
+        $sort: { TotalStars: -1 }
+      },
+      {
+        $limit: 3
+      }
+    ])
+    return response(barbers, false, SuccessMessage.GET_DATA_SUCCESS, 200)
+  } catch (error: any) {
+    return response({}, true, error.toString(), 500)
+  }
+}
+
+const fncInactiveOrActiveAccount = async (req: Request) => {
+  try {
+    const { UserID, IsActive } = req.body as InactiveOrActiveAccountDTO
+    const updateAccount = await Account.findOneAndUpdate(
+      { UserID: UserID },
+      { IsActive: IsActive },
+      { new: true }
+    )
+    if (!updateAccount) return response({}, true, ErrorMessage.HAVE_AN_ERROR, 200)
+    return response({}, false, "Tài khoản đã bị khóa", 200)
   } catch (error: any) {
     return response({}, true, error.toString(), 500)
   }
@@ -255,6 +389,8 @@ const UserService = {
   fncUpdateService,
   fncGetListBarber,
   fncGetDetailBarber,
+  fncGetListTopBarber,
+  fncInactiveOrActiveAccount
 }
 
 export default UserService

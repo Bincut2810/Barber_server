@@ -7,6 +7,7 @@ dotenv.config()
 import cookieParser from "cookie-parser"
 import connect from "./config/DBConfig"
 import routes from "./routes"
+import socket from "./sockets"
 
 const app = express()
 const server = http.createServer(app)
@@ -30,6 +31,8 @@ app.use(cookieParser())
 app.use(express.json())
 
 routes(app)
+
+socket(io)
 
 server.listen(process.env.PORT, async () => {
   await connect()

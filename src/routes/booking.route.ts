@@ -13,5 +13,17 @@ BookingRoute.post("/getListMyBooking",
   authMiddleware([Roles.ROLE_USER, Roles.ROLE_BARBER]),
   BookingController.getListMyBooking
 )
+BookingRoute.post("/changeBookingStatus",
+  authMiddleware([Roles.ROLE_USER, Roles.ROLE_BARBER]),
+  BookingController.changeBookingStatus
+)
+BookingRoute.post("/changeBookingPaidStatus",
+  authMiddleware([Roles.ROLE_USER]),
+  BookingController.changeBookingPaidStatus
+)
+BookingRoute.get("/getDetailBooking/:BookingID",
+  authMiddleware([Roles.ROLE_USER]),
+  BookingController.getDetailBooking
+)
 
 export default BookingRoute

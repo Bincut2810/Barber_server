@@ -12,11 +12,12 @@ export const ErrorMessage = {
   ACCOUNT_INACTIVE: "Tài khoản đã bị khóa",
   PASSWORD_INCORRECT: "Mật khẩu không chính xác",
   HAVE_AN_ERROR: "Có lỗi xảy ra",
-  USER_NOT_EXIST: "User không tồn tại"
+  USER_NOT_EXIST: "User không tồn tại",
+  BOOKING_NOT_EXIST: "Booking không tồn tại"
 }
 
 export const SuccessMessage = {
-  GET_DATA_SUCCESS: "Lấy data thành công"
+  GET_DATA_SUCCESS: "Lấy data thành công",
 }
 
 // ------------------------------------

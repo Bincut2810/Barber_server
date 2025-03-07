@@ -82,6 +82,24 @@ const getDetailBarber = async (req: Request, res: Response) => {
   }
 }
 
+const getListTopBarber = async (req: Request, res: Response) => {
+  try {
+    const response = await UserService.fncGetListTopBarber()
+    res.status(response.statusCode).json(response)
+  } catch (error: any) {
+    res.status(500).json(error.toString())
+  }
+}
+
+const inactiveOrActiveAccount = async (req: Request, res: Response) => {
+  try {
+    const response = await UserService.fncInactiveOrActiveAccount(req)
+    res.status(response.statusCode).json(response)
+  } catch (error: any) {
+    res.status(500).json(error.toString())
+  }
+}
+
 const UserController = {
   getDetailProfile,
   changeProfile,
@@ -91,7 +109,9 @@ const UserController = {
   updateSchedule,
   updateService,
   getListBarber,
-  getDetailBarber
+  getDetailBarber,
+  getListTopBarber,
+  inactiveOrActiveAccount
 }
 
 export default UserController

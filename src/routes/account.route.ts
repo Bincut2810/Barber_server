@@ -17,13 +17,12 @@ AccountRoute.get("/checkAuth",
 AccountRoute.get("/logout",
   AccountController.logout
 )
-// AccountRoute.post("/changePassword",
-//   authMiddleware([Roles.ROLE_STUDENT, Roles.ROLE_TEACHER]),
-//   AccountValidation.changePassword,
-//   AccountController.changePassword
-// )
-// AccountRoute.post("/forgotPassword",
-//   AccountController.forgotPassword
-// )
+AccountRoute.post("/changePassword",
+  authMiddleware([Roles.ROLE_USER, Roles.ROLE_BARBER]),
+  AccountController.changePassword
+)
+AccountRoute.post("/forgotPassword",
+  AccountController.forgotPassword
+)
 
 export default AccountRoute

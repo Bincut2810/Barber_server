@@ -12,6 +12,14 @@ const BookingSchema = new Schema({
     ref: 'Users',
     required: true
   },
+  CustomerAddress: {
+    type: String,
+    required: true
+  },
+  CustomerPhone: {
+    type: String,
+    required: true
+  },
   Services: {
     type: [
       {
@@ -27,6 +35,10 @@ const BookingSchema = new Schema({
           type: Number,
           required: true
         },
+        ServiceTime: {
+          type: Number,
+          required: true
+        }
       }
     ],
     required: true
@@ -38,6 +50,10 @@ const BookingSchema = new Schema({
   TotalExpensePrice: {
     type: Number,
     required: true
+  },
+  IsPaid: {
+    type: Boolean,
+    default: false
   },
   BookingStatus: {
     type: Number,

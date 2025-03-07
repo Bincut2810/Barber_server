@@ -1,5 +1,7 @@
 import express from "express"
 import CommonController from "../controllers/common.controller"
+import authMiddleware from "../middlewares/auth.middleware"
+import { Roles } from "../utils/constant"
 
 const CommonRoute = express.Router()
 
@@ -11,6 +13,13 @@ CommonRoute.post("/createSystemKey",
 )
 CommonRoute.post("/insertParentKey",
   CommonController.insertParentKey
+)
+CommonRoute.get("/getProfitPercent",
+  CommonController.getProfitPercent
+)
+CommonRoute.post("/changeProfitPercent",
+  authMiddleware([Roles.ROLE_ADMIN]),
+  CommonController.changeProfitPercent
 )
 
 export default CommonRoute

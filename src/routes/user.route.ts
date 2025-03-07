@@ -10,7 +10,7 @@ UserRoute.get("/getDetailProfile",
   UserController.getDetailProfile
 )
 UserRoute.post("/changeProfile",
-  authMiddleware([Roles.ROLE_BARBER]),
+  authMiddleware([Roles.ROLE_BARBER, Roles.ROLE_USER]),
   UserController.changeProfile
 )
 UserRoute.post("/getListUser",
@@ -38,6 +38,13 @@ UserRoute.post("/getListBarber",
 )
 UserRoute.get("/getDetailBarber/:BarberID",
   UserController.getDetailBarber
+)
+UserRoute.get("/getListTopBarber",
+  UserController.getListTopBarber
+)
+UserRoute.post("/inactiveOrActiveAccount",
+  authMiddleware([Roles.ROLE_ADMIN]),
+  UserController.inactiveOrActiveAccount
 )
 
 export default UserRoute

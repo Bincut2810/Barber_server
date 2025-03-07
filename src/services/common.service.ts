@@ -7,6 +7,9 @@ import {
   CreateSystemKeyDTO,
   InsertParentKeyDTO
 } from "../dtos/systemkey.dto"
+import ProfitPercent from "../models/profitpercent"
+
+const ProfitPercentID = "67c842e8d34722ce27a4681f"
 
 const getTabs = (RoleID: number, IsByGoogle: boolean) => {
   let tabs = [] as any[]
@@ -78,11 +81,40 @@ const fncGetListTabs = async (req: Request) => {
   }
 }
 
+const fncGetProfitPercent = async () => {
+  try {
+    const percent = await getOneDocument(ProfitPercent, "_id", ProfitPercentID)
+    return response(percent, false, "Lấy data thành công", 200)
+  } catch (error: any) {
+    return response({}, true, error.toString(), 500)
+  }
+}
+
+const fncChangeProfitPercent = async (req: Request) => {
+  try {
+    const { Percent } = req.body as { Percent: number }
+    const updatePercent = await ProfitPercent.findOneAndUpdate(
+      {
+        _id: ProfitPercentID
+      },
+      {
+        Percent: Percent
+      },
+      { new: true }
+    )
+    return response(updatePercent, false, "Cập nhật phần trăm lợi nhuận thành công", 200)
+  } catch (error: any) {
+    return response({}, true, error.toString(), 500)
+  }
+}
+
 const CommonService = {
   fncGetListSystemKey,
   fncCreateSystemKey,
   fncInsertParentKey,
   fncGetListTabs,
+  fncGetProfitPercent,
+  fncChangeProfitPercent,
 }
 
 export default CommonService

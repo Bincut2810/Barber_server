@@ -19,9 +19,39 @@ const getListMyBooking = async (req: Request, res: Response) => {
   }
 }
 
+const changeBookingStatus = async (req: Request, res: Response) => {
+  try {
+    const response = await BookingService.fncChangeBookingStatus(req)
+    res.status(response.statusCode).json(response)
+  } catch (error: any) {
+    res.status(500).json(error.toString())
+  }
+}
+
+const changeBookingPaidStatus = async (req: Request, res: Response) => {
+  try {
+    const response = await BookingService.fncChangeBookingPaidStatus(req)
+    res.status(response.statusCode).json(response)
+  } catch (error: any) {
+    res.status(500).json(error.toString())
+  }
+}
+
+const getDetailBooking = async (req: Request, res: Response) => {
+  try {
+    const response = await BookingService.fncGetDetailBooking(req)
+    res.status(response.statusCode).json(response)
+  } catch (error: any) {
+    res.status(500).json(error.toString())
+  }
+}
+
 const BookingController = {
   createBooking,
-  getListMyBooking
+  getListMyBooking,
+  changeBookingStatus,
+  changeBookingPaidStatus,
+  getDetailBooking
 }
 
 export default BookingController

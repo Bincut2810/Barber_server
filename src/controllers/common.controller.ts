@@ -37,11 +37,31 @@ const getListTabs = async (req: Request, res: Response) => {
   }
 }
 
+const getProfitPercent = async (req: Request, res: Response) => {
+  try {
+    const response = await CommonService.fncGetProfitPercent()
+    res.status(response.statusCode).json(response)
+  } catch (error: any) {
+    res.status(500).json(error.toString())
+  }
+}
+
+const changeProfitPercent = async (req: Request, res: Response) => {
+  try {
+    const response = await CommonService.fncChangeProfitPercent(req)
+    res.status(response.statusCode).json(response)
+  } catch (error: any) {
+    res.status(500).json(error.toString())
+  }
+}
+
 const CommonController = {
   getListSystemKey,
   createSystemKey,
   insertParentKey,
   getListTabs,
+  getProfitPercent,
+  changeProfitPercent,
 }
 
 export default CommonController

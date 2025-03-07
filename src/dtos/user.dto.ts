@@ -34,10 +34,16 @@ export interface UpdateServiceDTO {
   Services: {
     ServiceName: string,
     ServicePrice: number,
-    ExpensePrice: number
+    ExpensePrice: number,
+    ServiceTime: number
   }[]
 }
 
 export interface GetListBarberDTO extends CommonDTO {
+  SortByStar: 1 | -1
+}
 
+export interface InactiveOrActiveAccountDTO {
+  UserID: ObjectId,
+  IsActive: boolean,
 }
