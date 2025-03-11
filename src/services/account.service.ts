@@ -17,21 +17,29 @@ const saltRounds = 10
 
 const fncRegister = async (req: Request, res: Response) => {
   try {
-    const { Email, RoleID, Password } = req.body as RegisterDTO
+    const { Email, RoleID } = req.body as RegisterDTO
     const checkExist = await getOneDocument(Account, "Email", Email)
     if (!!checkExist) return response({}, true, ErrorMessage.EMAIL_EXIST, 200)
     const user = await User.create({
       ...req.body,
       RegisterStatus: RoleID === Roles.ROLE_USER ? 3 : 1,
     })
-    const hashPassword = bcrypt.hashSync(Password, saltRounds)
     await Account.create({
       UserID: user._id,
       Email,
       RoleID: RoleID,
-      Password: hashPassword
     })
-    return response({}, false, "Đăng ký tài khoản thành công", 200)
+    const token = signAccessToken({
+      ID: user._id,
+      RoleID: RoleID,
+    })
+    res.cookie("token", token, {
+      httpOnly: true, // cookie chỉ được truy cập bới server
+      secure: true, // cookie chỉ được sử dụng với https
+      sameSite: "none",
+      maxAge: 6 * 60 * 60 * 1000 // 8h
+    })
+    return response(token, false, "Đăng ký tài khoản thành công", 200)
   } catch (error: any) {
     return response({}, true, error.toString(), 500)
   }
@@ -52,12 +60,10 @@ const fncCheckAuth = async (req: Request) => {
 
 const fncLogin = async (req: Request, res: Response) => {
   try {
-    const { Password, Email } = req.body as LoginDTO
+    const { Email } = req.body as LoginDTO
     const getAccount = await getOneDocument(Account, "Email", Email)
     if (!getAccount) return response({}, true, ErrorMessage.EMAIL_NOT_EXIST, 200)
     if (!getAccount.IsActive) return response({}, true, ErrorMessage.ACCOUNT_INACTIVE, 200)
-    const check = bcrypt.compareSync(Password, getAccount.Password)
-    if (!check) return response({}, true, ErrorMessage.PASSWORD_INCORRECT, 200)
     const token = signAccessToken({
       ID: getAccount.UserID,
       RoleID: getAccount.RoleID,

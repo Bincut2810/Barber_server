@@ -6,7 +6,11 @@ import User from "../models/user"
 
 const fncCreatePayment = async (req: Request) => {
   try {
-    await Payment.create(req.body as CreatePaymentDTO)
+    const { ID } = req.user
+    await Payment.create({
+      ...req.body as CreatePaymentDTO,
+      Customer: ID
+    })
     return response({}, false, "Thanh toán thành công", 201)
   } catch (error: any) {
     return response({}, true, error.toString(), 500)

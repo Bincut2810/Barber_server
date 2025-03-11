@@ -15,10 +15,6 @@ const AccountSchema = new Schema({
     type: Number,
     required: true
   },
-  Password: {
-    type: String,
-    required: true
-  },
   IsActive: {
     type: Boolean,
     default: true
