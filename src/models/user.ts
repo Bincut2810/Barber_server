@@ -84,7 +84,13 @@ const UserSchema = new Schema({
       { type: Number }
     ],
     default: []
-  }
+  },
+  Results: {
+    type: [
+      { type: String }
+    ],
+    default: []
+  },
 }, {
   timestamps: true
 })

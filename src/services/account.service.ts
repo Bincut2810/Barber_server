@@ -80,50 +80,10 @@ const fncLogin = async (req: Request, res: Response) => {
   }
 }
 
-const fncChangePassword = async (req: Request) => {
-  try {
-    const UserID = req.user.ID
-    const { OldPassword, NewPassword } = req.body as ChangePasswordDTO
-    const account = await getOneDocument(Account, "UserID", UserID)
-    if (!account) return response({}, true, "Có lỗi xảy ra", 200)
-    const check = bcrypt.compareSync(OldPassword, account.Password)
-    if (!check) return response({}, true, ErrorMessage.PASSWORD_INCORRECT, 200)
-    const hashPassword = bcrypt.hashSync(NewPassword, saltRounds)
-    await Account.updateOne({ UserID: UserID }, { Password: hashPassword })
-    return response({}, false, "Cập nhật mật khẩu thành công", 200)
-  } catch (error: any) {
-    return response({}, true, error.toString(), 500)
-  }
-}
-
-const fncForgotPassword = async (req: Request) => {
-  try {
-    const { Email, Step, Password } = req.body as ForgotPasswordDTO
-    if (Step === 0) {
-      const getAccount = await getOneDocument(Account, "Email", Email)
-      if (!getAccount) return response({}, true, ErrorMessage.EMAIL_NOT_EXIST, 200)
-      return response({ Email }, false, "Kiểm tra email thành công", 200)
-    }
-    if (Step === 2) {
-      const hashPassword = bcrypt.hashSync(Password, saltRounds)
-      await Account.updateOne(
-        { Email },
-        { Password: hashPassword },
-        { new: true }
-      )
-      return response({}, false, "Mật khẩu đã được cập nhật", 200)
-    }
-  } catch (error: any) {
-    return response({}, true, error.toString(), 500)
-  }
-}
-
 const AccountService = {
   fncRegister,
   fncLogin,
   fncCheckAuth,
-  fncChangePassword,
-  fncForgotPassword
 }
 
 export default AccountService

@@ -46,5 +46,9 @@ UserRoute.post("/inactiveOrActiveAccount",
   authMiddleware([Roles.ROLE_ADMIN]),
   UserController.inactiveOrActiveAccount
 )
+UserRoute.post("/updateResult",
+  authMiddleware([Roles.ROLE_BARBER]),
+  UserController.updateResult
+)
 
 export default UserRoute

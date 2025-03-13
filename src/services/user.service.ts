@@ -6,10 +6,11 @@ import {
   GetListUserDTO,
   ChangeProfileDTO,
   ResponseRequestRegisterDTO,
-  UpdateSchedulesDTO,
+  UpdateScheduleDTO,
   UpdateServiceDTO,
   InactiveOrActiveAccountDTO,
-  GetListBarberDTO
+  GetListBarberDTO,
+  UpdateResultDTO
 } from "../dtos/user.dto"
 import mongoose from "mongoose"
 import Booking from "../models/booking"
@@ -168,7 +169,7 @@ const fncResponseRequestRegister = async (req: Request) => {
 const fncUpdateSchedule = async (req: Request) => {
   try {
     const { ID } = req.user
-    const { Schedules } = req.body as UpdateSchedulesDTO
+    const { Schedules } = req.body as UpdateScheduleDTO
     const updateUser = await User
       .findOneAndUpdate(
         { _id: ID },
@@ -305,16 +306,14 @@ export const fncGetDetailBarber = async (req: Request) => {
           FullName: 1,
           Address: 1,
           Phone: 1,
-          DateOfBirth: 1,
-          Gender: 1,
-          Certificates: 1,
           Experiences: 1,
           Services: 1,
           Schedules: 1,
           AvatarPath: 1,
           Stars: 1,
           TotalStars: { $sum: "$Stars" },
-          Email: 1
+          Email: 1,
+          Results: 1
         }
       },
     ])
@@ -373,7 +372,32 @@ const fncInactiveOrActiveAccount = async (req: Request) => {
       { new: true }
     )
     if (!updateAccount) return response({}, true, ErrorMessage.HAVE_AN_ERROR, 200)
-    return response({}, false, "Tài khoản đã bị khóa", 200)
+    return response(
+      {},
+      false,
+      !!IsActive
+        ? "Tài khoản đã được mở khóa"
+        : "Tài khoản đã bị khóa",
+      200
+    )
+  } catch (error: any) {
+    return response({}, true, error.toString(), 500)
+  }
+}
+
+const fncUpdateResult = async (req: Request) => {
+  try {
+    const { ID } = req.user
+    const { Results } = req.body as UpdateResultDTO
+    const updateUser = await User
+      .findOneAndUpdate(
+        { _id: ID },
+        { Results: Results },
+        { new: true }
+      )
+      .lean()
+    if (!updateUser) return response({}, true, ErrorMessage.HAVE_AN_ERROR, 200)
+    return response(updateUser, false, "Chỉnh sửa thành công", 200)
   } catch (error: any) {
     return response({}, true, error.toString(), 500)
   }
@@ -390,7 +414,8 @@ const UserService = {
   fncGetListBarber,
   fncGetDetailBarber,
   fncGetListTopBarber,
-  fncInactiveOrActiveAccount
+  fncInactiveOrActiveAccount,
+  fncUpdateResult
 }
 
 export default UserService

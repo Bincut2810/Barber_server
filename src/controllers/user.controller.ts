@@ -100,6 +100,15 @@ const inactiveOrActiveAccount = async (req: Request, res: Response) => {
   }
 }
 
+const updateResult = async (req: Request, res: Response) => {
+  try {
+    const response = await UserService.fncUpdateResult(req)
+    res.status(response.statusCode).json(response)
+  } catch (error: any) {
+    res.status(500).json(error.toString())
+  }
+}
+
 const UserController = {
   getDetailProfile,
   changeProfile,
@@ -111,7 +120,8 @@ const UserController = {
   getListBarber,
   getDetailBarber,
   getListTopBarber,
-  inactiveOrActiveAccount
+  inactiveOrActiveAccount,
+  updateResult
 }
 
 export default UserController

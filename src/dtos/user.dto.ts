@@ -2,6 +2,7 @@ import { ObjectId } from "mongoose"
 import { CommonDTO } from "./common.dto"
 
 export interface ChangeProfileDTO {
+  FullName: string,
   Address: string,
   Phone: string,
   DateOfBirth: Date,
@@ -22,7 +23,7 @@ export interface ResponseRequestRegisterDTO {
   RegisterStatus: number
 }
 
-export interface UpdateSchedulesDTO {
+export interface UpdateScheduleDTO {
   Schedules: {
     DateAt: string,
     StartTime: Date,
@@ -46,4 +47,8 @@ export interface GetListBarberDTO extends CommonDTO {
 export interface InactiveOrActiveAccountDTO {
   UserID: ObjectId,
   IsActive: boolean,
+}
+
+export interface UpdateResultDTO {
+  Results: string[]
 }
