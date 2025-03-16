@@ -4,7 +4,7 @@ import Booking from "../models/booking"
 import {
   ChangeBookingPaidStatusDTO,
   ChangeBookingStatusDTO,
-  CreateBookingDTO
+  CreateUpdateBookingDTO
 } from "../dtos/booking.dto"
 import { ErrorMessage, Roles, SuccessMessage } from "../utils/constant"
 import User from "../models/user"
@@ -12,11 +12,12 @@ import mongoose from "mongoose"
 import sendEmail from "../utils/send-mail"
 import { getOneDocument } from "../utils/queryFunction"
 import moment from "moment"
+import Payment from "../models/payment"
 
 const fncCreateBooking = async (req: Request) => {
   try {
     const UserID = req.user.ID
-    const { BarberID, BarberEmail, BarberName } = req.body as CreateBookingDTO
+    const { BarberID, BarberEmail, BarberName } = req.body as CreateUpdateBookingDTO
     const subject = "THÔNG BÁO KHÁCH HÀNG BOOKING"
     const content = `
                 <html>
@@ -89,7 +90,9 @@ const fncGetListMyBooking = async (req: Request) => {
             {
               $project: {
                 FullName: 1,
-                Email: 1
+                AvatarPath: 1,
+                Email: 1,
+                Services: 1
               }
             }
           ]
@@ -120,7 +123,10 @@ const fncGetListMyBooking = async (req: Request) => {
             {
               $project: {
                 FullName: 1,
-                Email: 1
+                AvatarPath: 1,
+                Email: 1,
+                Services: 1,
+                Schedules: 1
               }
             }
           ]
@@ -131,26 +137,23 @@ const fncGetListMyBooking = async (req: Request) => {
         $sort: {
           updatedAt: -1
         }
+      },
+      {
+        $project: {
+          _id: 1,
+          Barber: 1,
+          Customer: 1,
+          DateAt: 1,
+          BookingStatus: 1,
+          Services: 1,
+          CustomerAddress: 1,
+          CustomerPhone: 1
+        }
       }
     ])
     const data = bookings.map((i: any) => ({
       ...i,
-      ButtonShow: {
-        IsConfirm: RoleID === Roles.ROLE_BARBER ? true : false,
-        IsReject: true,
-        IsPayment: RoleID === Roles.ROLE_USER ? true : false,
-        IsComplete: RoleID === Roles.ROLE_BARBER ? true : false,
-        IsFeedback: RoleID === Roles.ROLE_USER ? true : false,
-      },
-      ButtonDisabled: {
-        IsConfirm: i.BookingStatus === 1 ? false : true,
-        IsReject: i.BookingStatus === 1 ? false : true,
-        IsPayment: i.BookingStatus === 2 && !i.IsPaid ? false : true,
-        IsComplete: i.BookingStatus === 4 && !!i.IsPaid && !!moment().isAfter(i.DateAt)
-          ? false
-          : true,
-        IsFeedback: i.BookingStatus === 5 ? false : true
-      }
+      IsBookAgain: RoleID === Roles.ROLE_USER && i.BookingStatus === 3 ? true : false
     }))
     return response(data, false, SuccessMessage.GET_DATA_SUCCESS, 200)
   } catch (error: any) {
@@ -221,8 +224,8 @@ const fncChangeBookingStatus = async (req: Request) => {
         { BookingStatus: BookingStatus },
         { new: true }
       )
-      .populate("Customer", ["_id", "FullName"])
-      .populate("Barber", ["_id", "FullName"])
+      .populate("Customer", ["_id", "FullName", "AvatarPath"])
+      .populate("Barber", ["_id", "FullName", "AvatarPath"])
       .lean()
     if (!updateBooking) return response({}, true, ErrorMessage.HAVE_AN_ERROR, 200)
     const data = {
@@ -235,7 +238,9 @@ const fncChangeBookingStatus = async (req: Request) => {
         ...updateBooking.Barber,
         Email: BarberEmail
       },
+      IsBookAgain: RoleID === Roles.ROLE_BARBER && updateBooking.BookingStatus === 3 ? true : false,
       ButtonShow: {
+        IsUpdate: RoleID === Roles.ROLE_USER ? false : true,
         IsConfirm: RoleID === Roles.ROLE_BARBER ? false : true,
         IsReject: true,
         IsPayment: RoleID === Roles.ROLE_USER ? false : true,
@@ -243,6 +248,7 @@ const fncChangeBookingStatus = async (req: Request) => {
         IsFeedback: RoleID === Roles.ROLE_BARBER ? true : false,
       },
       ButtonDisabled: {
+        IsUpdate: updateBooking.BookingStatus === 1 ? false : true,
         IsConfirm: updateBooking.BookingStatus === 1 ? false : true,
         IsReject: updateBooking.BookingStatus === 1 ? false : true,
         IsPayment: updateBooking.BookingStatus === 2 && !updateBooking.IsPaid
@@ -271,7 +277,10 @@ const fncChangeBookingStatus = async (req: Request) => {
 }
 
 const fncChangeBookingPaidStatus = async (req: Request) => {
+  const session = await mongoose.startSession()
+  session.startTransaction()
   try {
+    const { ID } = req.user
     const { BookingID, BarberName, BarberEmail, CustomerName } = req.body as ChangeBookingPaidStatusDTO
     const booking = await getOneDocument(Booking, "_id", BookingID)
     if (!booking) return response({}, true, ErrorMessage.BOOKING_NOT_EXIST, 200)
@@ -302,26 +311,75 @@ const fncChangeBookingPaidStatus = async (req: Request) => {
       {
         IsPaid: true,
         BookingStatus: 4
-      }
+      },
+      { session: session }
     )
-    if (!updateBooking) return response({}, true, ErrorMessage.HAVE_AN_ERROR, 200)
+    if (!updateBooking) {
+      await session.abortTransaction()
+      return response({}, true, ErrorMessage.HAVE_AN_ERROR, 200)
+    }
+    await Payment.create(
+      [{
+        ...req.body as ChangeBookingPaidStatusDTO,
+        Booking: BookingID,
+        Customer: ID
+      }],
+      { session: session }
+    )
+    await session.commitTransaction()
     return response({}, false, "Thanh toán thành công", 200)
   } catch (error: any) {
+    await session.abortTransaction()
     return response({}, true, error.toString(), 500)
+  } finally {
+    await session.endSession()
   }
 }
 
 const fncGetDetailBooking = async (req: Request) => {
   try {
     const { BookingID } = req.params
-    const { ID } = req.user
+    const { ID, RoleID } = req.user
+    let bookingSchedules = [] as any[]
     const booking = await Booking.aggregate([
       {
         $match: {
           _id: new mongoose.Types.ObjectId(`${BookingID}`),
-          Customer: new mongoose.Types.ObjectId(`${ID}`),
+          [RoleID === Roles.ROLE_BARBER ? "Barber" : "Customer"]: new mongoose.Types.ObjectId(`${ID}`),
         }
       },
+      {
+        $lookup: {
+          from: "users",
+          localField: "Customer",
+          foreignField: "_id",
+          as: "Customer",
+          pipeline: [
+            {
+              $lookup: {
+                from: "accounts",
+                localField: "_id",
+                foreignField: "UserID",
+                as: "Account"
+              }
+            },
+            { $unwind: '$Account' },
+            {
+              $addFields: {
+                Email: "$Account.Email"
+              }
+            },
+            {
+              $project: {
+                FullName: 1,
+                AvatarPath: 1,
+                Email: 1
+              }
+            }
+          ]
+        }
+      },
+      { $unwind: '$Customer' },
       {
         $lookup: {
           from: "users",
@@ -347,7 +405,9 @@ const fncGetDetailBooking = async (req: Request) => {
               $project: {
                 _id: 1,
                 FullName: 1,
-                Email: 1
+                Email: 1,
+                Services: 1,
+                Schedules: 1
               }
             }
           ]
@@ -356,7 +416,98 @@ const fncGetDetailBooking = async (req: Request) => {
       { $unwind: "$Barber" }
     ])
     if (!booking[0]) return response({}, true, ErrorMessage.BOOKING_NOT_EXIST, 200)
-    return response(booking[0], false, SuccessMessage.GET_DATA_SUCCESS, 200)
+    const data = {
+      ...booking[0],
+      Barber: {
+        ...booking[0].Barber,
+        BookingSchedules: bookingSchedules
+      },
+      ButtonShow: {
+        IsUpdate: RoleID === Roles.ROLE_USER ? true : false,
+        IsConfirm: RoleID === Roles.ROLE_BARBER ? true : false,
+        IsReject: true,
+        IsPayment: RoleID === Roles.ROLE_USER ? true : false,
+        IsComplete: RoleID === Roles.ROLE_BARBER ? true : false,
+        IsFeedback: RoleID === Roles.ROLE_USER ? true : false,
+      },
+      ButtonDisabled: {
+        IsUpdate: booking[0].BookingStatus === 1 ? false : true,
+        IsConfirm: booking[0].BookingStatus === 1 ? false : true,
+        IsReject: booking[0].BookingStatus === 1 ? false : true,
+        IsPayment: booking[0].BookingStatus === 2 && !booking[0].IsPaid ? false : true,
+        IsComplete: booking[0].BookingStatus === 4 && !!booking[0].IsPaid && !!moment().isAfter(booking[0].DateAt)
+          ? false
+          : true,
+        IsFeedback: booking[0].BookingStatus === 5 ? false : true
+      }
+    }
+    return response(data, false, SuccessMessage.GET_DATA_SUCCESS, 200)
+  } catch (error: any) {
+    return response({}, true, error.toString(), 500)
+  }
+}
+
+const fncUpdateBooking = async (req: Request) => {
+  try {
+    const UserID = req.user.ID
+    const { BookingID, BarberEmail, BarberName } = req.body as CreateUpdateBookingDTO
+    const subject = "THÔNG BÁO KHÁCH HÀNG BOOKING"
+    const content = `
+                <html>
+                <head>
+                <style>
+                    p {
+                        color: #333;
+                    }
+                </style>
+                </head>
+                <body>
+                  <p style="margin-top: 30px; margin-bottom:30px; text-align:center; font-weigth: 700; font-size: 20px">THÔNG BÁO KHÁCH HÀNG BOOKING</p>
+                  <p style="margin-bottom:10px">Xin chào ${BarberName},</p>
+                  <p>Khách hàng đã thay đổi lịch sử dụng dịch vụ của bạn. Hãy vào lịch sử booking của mình để kiểm tra thông tin booking.</p>
+                  <div>
+                    <span style="color:red; margin-right: 4px">Lưu ý:</span>
+                    <span>Trong vòng 48h nếu bạn không xác nhận booking này thì booking này sẽ tự động chuyển thành "Hủy xác nhận".</span>
+                  </div>
+                </body>
+                </html>
+                `
+    const checkSendMail = await sendEmail(BarberEmail, subject, content)
+    if (!checkSendMail) return response({}, true, ErrorMessage.SEND_MAIL_ERROR, 200)
+    const updateBooking = await Booking.findOneAndUpdate(
+      {
+        _id: BookingID,
+        Customer: UserID
+      },
+      { ...req.body }
+    )
+    if (!updateBooking) return response({}, true, ErrorMessage.HAVE_AN_ERROR, 200)
+    return response({}, false, "Chỉnh sửa booking thành công", 200)
+  } catch (error: any) {
+    return response({}, true, error.toString(), 500)
+  }
+}
+
+const fncGetBookingScheduleOfBarber = async (req: Request) => {
+  try {
+    const { BarberID } = req.params
+    let bookingSchedules = [] as any[]
+    const bookings = await Booking
+      .find({
+        Barber: BarberID,
+        BookingStatus: 4
+      })
+      .select("Services DateAt")
+    if (!!bookings.length) {
+      bookings.forEach((i: any) => {
+        const totalServiceTime = i.Services.reduce((sum: any, service: any) => sum + service.ServiceTime, 0)
+        bookingSchedules.push({
+          StartTime: i.DateAt,
+          EndTime: new Date(i.DateAt.getTime() + totalServiceTime * 60000)
+        })
+      })
+    }
+    return response(bookingSchedules, false, SuccessMessage.GET_DATA_SUCCESS, 200)
   } catch (error: any) {
     return response({}, true, error.toString(), 500)
   }
@@ -367,7 +518,9 @@ const BookingService = {
   fncGetListMyBooking,
   fncChangeBookingStatus,
   fncChangeBookingPaidStatus,
-  fncGetDetailBooking
+  fncGetDetailBooking,
+  fncUpdateBooking,
+  fncGetBookingScheduleOfBarber
 }
 
 export default BookingService

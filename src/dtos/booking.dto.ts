@@ -1,6 +1,7 @@
 import { ObjectId } from "mongoose"
 
-export interface CreateBookingDTO {
+export interface CreateUpdateBookingDTO {
+  BookingID: ObjectId,
   BarberID: ObjectId,
   BarberEmail: string,
   BarberName: string,
@@ -30,5 +31,8 @@ export interface ChangeBookingPaidStatusDTO {
   BookingID: ObjectId,
   CustomerName: string,
   BarberName: string,
-  BarberEmail: string
+  BarberEmail: string,
+  Description: string,
+  TotalFee: number,
+  Percent: number
 }

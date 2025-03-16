@@ -14,6 +14,10 @@ CommonRoute.post("/createSystemKey",
 CommonRoute.post("/insertParentKey",
   CommonController.insertParentKey
 )
+CommonRoute.get("/getListTab",
+  authMiddleware([Roles.ROLE_ADMIN, Roles.ROLE_BARBER, Roles.ROLE_USER]),
+  CommonController.getListTab
+)
 CommonRoute.get("/getProfitPercent",
   CommonController.getProfitPercent
 )

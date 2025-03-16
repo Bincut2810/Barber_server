@@ -13,5 +13,9 @@ PaymentRoute.get("/getListPayment",
   authMiddleware([Roles.ROLE_ADMIN]),
   PaymentController.getListPayment
 )
+PaymentRoute.get("/getListPaymentByUser",
+  authMiddleware([Roles.ROLE_USER]),
+  PaymentController.getListPaymentByUser
+)
 
 export default PaymentRoute

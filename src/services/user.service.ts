@@ -54,7 +54,7 @@ const fncGetDetailProfile = async (req: Request) => {
 
 const fncChangeProfile = async (req: Request) => {
   try {
-    const { ID, RoleID } = req.user
+    const { ID } = req.user
     const user = await User
       .findOneAndUpdate(
         { _id: ID },
@@ -64,15 +64,9 @@ const fncChangeProfile = async (req: Request) => {
         },
         { new: true }
       )
+      .lean()
     if (!user) return response({}, true, ErrorMessage.HAVE_AN_ERROR, 200)
-    return response(
-      user,
-      false,
-      RoleID === Roles.ROLE_BARBER
-        ? "Bạn đã cập nhật thông tin thành công. Hãy bổ sung về dịch vụ và thời gian làm việc để quản trị viên duyệt!"
-        : "Bạn đã cập nhật thông tin thành công",
-      200
-    )
+    return response(user, false, "Bạn đã cập nhật thông tin thành công", 200)
   } catch (error: any) {
     return response({}, true, error.toString(), 500)
   }

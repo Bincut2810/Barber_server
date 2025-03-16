@@ -31,7 +31,7 @@ const PaymentSchema = new Schema({
   IsDeleted: {
     type: Boolean,
     default: false
-  }
+  },
 }, {
   timestamps: true
 })

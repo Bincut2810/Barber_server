@@ -1,7 +1,7 @@
 import { Request } from "express"
 import response from "../utils/response"
 import { getOneDocument } from "../utils/queryFunction"
-import { Roles } from "../utils/constant"
+import { Roles, SuccessMessage } from "../utils/constant"
 import SystemKey from "../models/systemkey"
 import {
   CreateSystemKeyDTO,
@@ -11,18 +11,14 @@ import ProfitPercent from "../models/profitpercent"
 
 const ProfitPercentID = "67c842e8d34722ce27a4681f"
 
-const getTabs = (RoleID: number, IsByGoogle: boolean) => {
+const getTabs = (RoleID: number) => {
   let tabs = [] as any[]
   if (RoleID === Roles.ROLE_ADMIN) {
-    tabs = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+    tabs = [1, 2, 3, 4]
   } else if (RoleID === Roles.ROLE_BARBER) {
-    tabs = !!IsByGoogle
-      ? [1, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13]
-      : [1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13]
-  } else {
-    tabs = !!IsByGoogle
-      ? [1, 4, 5, 7, 9, 10, 11, 12, 13]
-      : [1, 2, 4, 5, 7, 9, 10, 11, 12, 13]
+    tabs = [1, 2, 3, 4, 5, 7]
+  } else if (RoleID === Roles.ROLE_USER) {
+    tabs = [1, 5, 6, 7]
   }
   return tabs
 }
@@ -70,12 +66,11 @@ const fncInsertParentKey = async (req: Request) => {
   }
 }
 
-const fncGetListTabs = async (req: Request) => {
+const fncGetListTab = async (req: Request) => {
   try {
     const { RoleID } = req.user
-    const { IsByGoogle } = req.body
-    const tabs = getTabs(RoleID, IsByGoogle)
-    return response(tabs, false, "Lấy data thành công", 200)
+    const tabs = getTabs(RoleID)
+    return response(tabs, false, SuccessMessage.GET_DATA_SUCCESS, 200)
   } catch (error: any) {
     return response({}, true, error.toString(), 500)
   }
@@ -84,7 +79,7 @@ const fncGetListTabs = async (req: Request) => {
 const fncGetProfitPercent = async () => {
   try {
     const percent = await getOneDocument(ProfitPercent, "_id", ProfitPercentID)
-    return response(percent, false, "Lấy data thành công", 200)
+    return response(percent, false, SuccessMessage.GET_DATA_SUCCESS, 200)
   } catch (error: any) {
     return response({}, true, error.toString(), 500)
   }
@@ -112,7 +107,7 @@ const CommonService = {
   fncGetListSystemKey,
   fncCreateSystemKey,
   fncInsertParentKey,
-  fncGetListTabs,
+  fncGetListTab,
   fncGetProfitPercent,
   fncChangeProfitPercent,
 }
