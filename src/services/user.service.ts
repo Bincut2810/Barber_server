@@ -202,16 +202,14 @@ const fncUpdateService = async (req: Request) => {
 
 const fncGetListBarber = async (req: Request) => {
   try {
-    const { TextSearch, PageSize, CurrentPage, SortByStar } = req.body as GetListBarberDTO
+    const { TextSearch, PageSize, CurrentPage, SortByStar, AddressSearch } = req.body as GetListBarberDTO
     const barbers = await User.aggregate([
       {
         $match: {
           RoleID: Roles.ROLE_BARBER,
           RegisterStatus: REGISTER_STATUS.DA_DUYET,
-          $or: [
-            { FullName: { $regex: TextSearch, $options: "i" } },
-            { Address: { $regex: TextSearch, $options: "i" } },
-          ]
+          FullName: { $regex: TextSearch, $options: "i" },
+          Address: { $regex: AddressSearch, $options: "i" }
         }
       },
       {
@@ -351,7 +349,7 @@ const fncGetListTopBarber = async () => {
       {
         $sort: { TotalStars: -1 }
       },
-      { $limit: 3}
+      { $limit: 3 }
     ])
     return response(barbers, false, SUCCESS_MESSAGE.GET_DATA_SUCCESS, 200)
   } catch (error: any) {
