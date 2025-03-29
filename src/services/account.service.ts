@@ -23,6 +23,7 @@ const fncRegister = async (req: Request, res: Response) => {
         [{
           ...req.body,
           RegisterStatus: RoleID === Roles.ROLE_USER ? REGISTER_STATUS.DA_DUYET : REGISTER_STATUS.MOI_TAO,
+          IsFirstLogin: RoleID === Roles.ROLE_BARBER ? true : false
         }],
         { session: session }
       )

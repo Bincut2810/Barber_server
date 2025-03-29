@@ -164,7 +164,7 @@ const fncGetListMyBooking = async (req: Request) => {
 
 const fncChangeBookingStatus = async (req: Request) => {
   try {
-    const { BookingID, BookingStatus, CustomerEmail, CustomerName, BarberEmail, BarberName } = req.body as ChangeBookingStatusDTO
+    const { BookingID, BookingStatus, CustomerEmail, CustomerName, BarberEmail, BarberName, Reason } = req.body as ChangeBookingStatusDTO
     const { RoleID } = req.user
     const booking = await getOneDocument(Booking, "_id", BookingID)
     if (!booking) return response({}, true, ERROR_MESSAGE.BOOKING_NOT_EXIST, 200)
@@ -172,7 +172,7 @@ const fncChangeBookingStatus = async (req: Request) => {
     if ([BOOKING_STATUS.DA_XAC_NHAN, BOOKING_STATUS.HUY_XAC_NHAN].includes(BookingStatus)) {
       if (RoleID === Roles.ROLE_BARBER) {
         confirmContent = `Barber ${BarberName} đã xác nhận booking của bạn. Bạn hãy truy cập vào lịch sử booking của mình để tiến hành thanh toán và hoàn tất booking.`
-        rejectContent = `Barber ${BarberName} đã hủy xác nhận booking của bạn.`
+        rejectContent = `Barber ${BarberName} đã hủy xác nhận booking của bạn với lý do: ${Reason}`
         content = `
         <html>
         <head>
@@ -198,7 +198,7 @@ const fncChangeBookingStatus = async (req: Request) => {
         `
         checkSendMail = await sendEmail(CustomerEmail as string, subject, content)
       } else {
-        rejectContent = `Khách hàng ${CustomerName} đã hủy booking.`
+        rejectContent = `Khách hàng ${CustomerName} đã hủy booking với lý do: ${Reason}`
         content = `
         <html>
         <head>
