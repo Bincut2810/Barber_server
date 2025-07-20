@@ -20,7 +20,7 @@ const io = new Server(server, {
 })
 
 const allowOrigins = [
-  "https://barber-client-kjzl.vercel.app/",
+  "https://barber-client-kjzl.vercel.app",
 ]
 
 app.use(cors({
