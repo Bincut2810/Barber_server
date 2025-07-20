@@ -20,7 +20,7 @@ const io = new Server(server, {
 })
 
 const allowOrigins = [
-  "http://localhost:5173",
+  "https://barber-client-kjzl.vercel.app/",
 ]
 
 app.use(cors({
