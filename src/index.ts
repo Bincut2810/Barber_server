@@ -24,9 +24,15 @@ const allowOrigins = [
 ]
 
 app.use(cors({
-  origin: allowOrigins,
+  origin: function (origin, callback) {
+    if (!origin || allowOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
-}))
+}));
 
 app.use(cookieParser())
 
